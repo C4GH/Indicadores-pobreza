@@ -121,6 +121,13 @@ cj["_insegalim_modsev_proxy"] = (
 # Ámbito urbano/rural desde folioviv
 cj["ambito"] = cj["folioviv"].astype(str).map(ambito_from_folioviv)
 
+# Tamaño del hogar
+tam_hogar = poblacion.groupby(["folioviv", "foliohog"])["numren"].count().reset_index()
+tam_hogar.rename(columns={"numren": "tam_hogar"}, inplace=True)
+
+# Unir al cj (solo jefes culturales)
+cj = cj.merge(tam_hogar, on=["folioviv", "foliohog"], how="left")
+
 # Tabulados ponderados (usar 'factor_w')
 frames = []
 
@@ -130,6 +137,7 @@ df_nat = pd.DataFrame({
     "nivel": ["Nacional"],
     "grupo": ["Total"],
     "personas_ocup_cultura_jefes": [tot_w],
+    "tam_hogar_promedio": [np.average(cj["tam_hogar"], weights=cj["factor_w"])],
     "insegalim_mod_sev_%": [wmean(cj["_insegalim_modsev_proxy"], cj["factor_w"])],
     "insegalim_sev_%": [wmean(cj["_insegalim_severa_proxy"], cj["factor_w"])],
 })
@@ -142,6 +150,7 @@ if "entidad" in cj.columns:
         "nivel": "Por entidad",
         "grupo": g.apply(lambda d: d.name),
         "personas_ocup_cultura_jefes": g["factor_w"].sum().values,
+        "tam_hogar_promedio": g.apply(lambda d: np.average(d["tam_hogar"], weights=d["factor_w"])),
         "insegalim_mod_sev_%": g.apply(lambda d: wmean(d["_insegalim_modsev_proxy"], d["factor_w"])).values,
         "insegalim_sev_%": g.apply(lambda d: wmean(d["_insegalim_severa_proxy"], d["factor_w"])).values,
     })
@@ -153,6 +162,7 @@ df_amb = pd.DataFrame({
     "nivel": "Por ámbito",
     "grupo": g.apply(lambda d: d.name),
     "personas_ocup_cultura_jefes": g["factor_w"].sum().values,
+    "tam_hogar_promedio": g.apply(lambda d: np.average(d["tam_hogar"], weights=d["factor_w"])).values,
     "insegalim_mod_sev_%": g.apply(lambda d: wmean(d["_insegalim_modsev_proxy"], d["factor_w"])).values,
     "insegalim_sev_%":    g.apply(lambda d: wmean(d["_insegalim_severa_proxy"], d["factor_w"])).values,
 })
